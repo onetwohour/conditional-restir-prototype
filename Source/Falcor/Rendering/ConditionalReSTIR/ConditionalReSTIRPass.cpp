@@ -184,6 +184,7 @@ namespace Falcor
         mPathTracerParams.depthEps = mOptions.depthEps;
         mPathTracerParams.normalDotEps = mOptions.normalDotEps;
         mPathTracerParams.enableEarlyStop = mOptions.enableEarlyStop;
+        mPathTracerParams.decayFactor = mOptions.suffixWeightReuseDecay;
     }
 
     void ConditionalReSTIRPass::setOwnerDefines(Program::DefineList defines)
@@ -285,7 +286,10 @@ namespace Falcor
             dirty |= group.var("Normal Dot Epsilon", mOptions.normalDotEps, 0.9f, 1.0f, 0.0005f);
             group.tooltip("이전 프레임과 현재 프레임의 노멀 벡터 내적이 이 값보다 크면 동일한 픽셀로 간주합니다.");
 
-            mpPixelDebug->renderUI(group);
+            dirty |= group.var("Suffix Weight Reuse Decay", mOptions.suffixWeightReuseDecay, 0.5f, 1.0f, 0.001f);
+            group.tooltip(
+                "변화 없는 프레임이 계속될수록 Suffix Weight를 재사용할 확률이 증가합니다.\n이 값이 작을수록 확률은 더 빠르게 상승합니다."
+            );
         }
 
         if (auto group = widget.group("Debugging"))
@@ -435,11 +439,39 @@ namespace Falcor
         createOrDestroyBufferWithCounterNoReallocate(mpSearchPointBoundingBoxBuffer, "searchPointBoundingBoxBuffer", frameDim.x * frameDim.y);
         createOrDestroyBufferNoReallocate(mpPrefixL2LengthBuffer, "prefixL2LengthBuffer", frameDim.x * frameDim.y);
 
-        if (!mpTemporalVBuffer || mpTemporalVBuffer->getHeight() != frameDim.y || mpTemporalVBuffer->getWidth() != frameDim.x)
+        auto isBufferSizeMismatch = [&](const Texture::SharedPtr& tex)
+        { return !tex || tex->getWidth() != frameDim.x || tex->getHeight() != frameDim.y; };
+
+        if (isBufferSizeMismatch(mpTemporalVBuffer) || isBufferSizeMismatch(mpVBuffer) ||
+            isBufferSizeMismatch(mpPrevVBuffer))
         {
-            mpTemporalVBuffer = Texture::create2D(frameDim.x, frameDim.y, mpScene->getHitInfo().getFormat(), 1, 1);
-            mpVBuffer = Texture::create2D(frameDim.x, frameDim.y, mpScene->getHitInfo().getFormat(), 1, 1);
-            mpPrevVBuffer = Texture::create2D(frameDim.x, frameDim.y, mpScene->getHitInfo().getFormat(), 1, 1);
+            ResourceFormat format = mpScene->getHitInfo().getFormat();
+            mpTemporalVBuffer = Texture::create2D(frameDim.x, frameDim.y, format, 1, 1);
+            mpVBuffer = Texture::create2D(frameDim.x, frameDim.y, format, 1, 1);
+            mpPrevVBuffer = Texture::create2D(frameDim.x, frameDim.y, format, 1, 1);
+        }
+
+        auto shouldRecreate = [&](const Texture::SharedPtr& tex)
+        { return !tex || tex->getWidth() != frameDim.x || tex->getHeight() != frameDim.y; };
+
+        auto createTex2D = [&](ResourceFormat fmt)
+        {
+            return Texture::create2D(
+                frameDim.x, frameDim.y, fmt, 1, 1, nullptr,
+                ResourceBindFlags::ShaderResource | ResourceBindFlags::UnorderedAccess
+            );
+        };
+
+        if (shouldRecreate(mpSavedWeight))
+        {
+            mpSavedWeight = createTex2D(ResourceFormat::RGBA32Float);
+            pRenderContext->clearUAV(mpSavedWeight->getUAV().get(), float4(0.f));
+        }
+
+        if (shouldRecreate(mpUnchangedCounterBuffer))
+        {
+            mpUnchangedCounterBuffer = createTex2D(ResourceFormat::R32Uint);
+            pRenderContext->clearUAV(mpUnchangedCounterBuffer->getUAV().get(), uint4(0));
         }
 
         mReallocate = false;
@@ -929,6 +961,8 @@ namespace Falcor
             var["vbuffer"] = pVBuffer;
             var["temporalVbuffer"] = mpTemporalVBuffer;
             var["prevVbuffer"] = mpPrevVBuffer;
+            var["savedWeight"] = mpSavedWeight;
+            var["unchangedCounterBuffer"] = mpUnchangedCounterBuffer;
         }
         return var;
     }
@@ -963,6 +997,8 @@ namespace Falcor
         var["prefixGBuffer"] = mpPrefixGBuffer;
 
         var["prevVbuffer"] = mpPrevVBuffer;
+        var["savedWeight"] = mpSavedWeight;
+        var["unchangedCounterBuffer"] = mpUnchangedCounterBuffer;
 
         return var;
     }

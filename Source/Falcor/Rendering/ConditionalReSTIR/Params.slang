@@ -68,6 +68,7 @@ struct ReSTIRPathTracerParams
     float normalDotEps   = 0.995f;  // default cos(5°)
 
     bool enableEarlyStop = true;
+    float decayFactor = 0.95f;
 
 #ifndef HOST_CODE
     bool disableDirectIllumination() { return DIMode >= 1; }

@@ -71,6 +71,7 @@ namespace Falcor
             float normalDotEps = 0.995f; ///< Normal dot product threshold
 
             bool enableEarlyStop = true;
+            float suffixWeightReuseDecay = 0.95f;
 
             // Note: Empty constructor needed for clang due to the use of the nested struct constructor in the parent constructor.
             Options() {}
@@ -270,7 +271,9 @@ namespace Falcor
 
         Texture::SharedPtr mpVBuffer;
         Texture::SharedPtr mpPrevVBuffer;
-        Buffer::SharedPtr mpPrevJacobian;
+
+        Texture::SharedPtr mpSavedWeight;
+        Texture::SharedPtr mpUnchangedCounterBuffer;
 
 public:
         bool mRecompile = true;                             ///< Recompile programs on next frame if set to true.

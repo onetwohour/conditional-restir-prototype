@@ -38,6 +38,9 @@ struct SuffixResampling
     Texture2D<PackedHitInfo> temporalVbuffer; ///< Fullscreen V-buffer for the primary hits.
     Texture2D<PackedHitInfo> prevVbuffer;
 
+    RWTexture2D<float3> savedWeight;
+    RWTexture2D<uint> unchangedCounterBuffer;
+
     Texture2D<float2> motionVectors;    
     RWStructuredBuffer<PathReservoir> reservoirs;
     StructuredBuffer<PathReservoir> prevReservoirs;
@@ -181,11 +184,28 @@ struct SuffixResampling
 
         bool hasValidTemporalNeighbor = false;
 
-        if (params.enableEarlyStop && !isGBufferChanged(pixel))
+        bool bufferChanged = params.enableEarlyStop ? isGBufferChanged(pixel) : false;
+
+        if (bufferChanged) unchangedCounterBuffer[pixel] = 0;
+        else 
         {
-            printSetPixel(pixel);
-            print("bufferChanged", 1);
-            return;
+            unchangedCounterBuffer[pixel] = min(unchangedCounterBuffer[pixel] + 1, 1000);
+
+            float unchangedFrames = float(unchangedCounterBuffer[pixel]);
+            float threshold = max(0.1f, pow(params.decayFactor, unchangedFrames));
+            float randomValue = sampleNext1D(sg);
+
+            print("Unchanged Frames: ", unchangedFrames);
+            print("Threshold: ", threshold);
+            print("Random Value: ", randomValue);
+
+            if (randomValue >= threshold)
+            {
+                float3 cachedWeight = savedWeight[pixel].xyz;
+                outColor[pixel] += float4(cachedWeight / restir.subpathSettings.numIntegrationPrefixes, 0.f);
+                print("Weight Calculating Skipped", 1);
+                return;
+            }
         }
 
         if (centralPrefixValid)
@@ -353,6 +373,8 @@ struct SuffixResampling
 
         subpathReservoir.pathFlags.insertPathTreeLength(currentPathTreeLength);
         subpathReservoir.pathFlags.insertPrefixLength(prefixLength);
+
+        savedWeight[pixel].xyz = res;
 
         // merge with reservoir
 
