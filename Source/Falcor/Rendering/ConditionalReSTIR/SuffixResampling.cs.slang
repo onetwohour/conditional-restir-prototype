@@ -36,6 +36,7 @@ struct SuffixResampling
 
     Texture2D<PackedHitInfo> vbuffer;         ///< Fullscreen V-buffer for the primary hits.
     Texture2D<PackedHitInfo> temporalVbuffer; ///< Fullscreen V-buffer for the primary hits.
+    Texture2D<PackedHitInfo> prevVbuffer;
 
     Texture2D<float2> motionVectors;    
     RWStructuredBuffer<PathReservoir> reservoirs;
@@ -120,6 +121,32 @@ struct SuffixResampling
         M *= restir.subpathSettings.nonCanonicalWeightMultiplier;
     }
 
+    float3 decodeNormal(uint packed)
+    {
+        float3 normal;
+        normal.x = ((packed >>  0) & 0xFF) / 127.5f - 1.0f;
+        normal.y = ((packed >>  8) & 0xFF) / 127.5f - 1.0f;
+        normal.z = ((packed >> 16) & 0xFF) / 127.5f - 1.0f;
+        return normalize(normal);
+    }
+
+    bool isGBufferChanged(int2 pixel)
+    {
+        PackedHitInfo prevPack = prevVbuffer[pixel];
+        PackedHitInfo currPack = vbuffer[pixel];
+
+        float3 nPrev = decodeNormal(prevPack.x);
+        float3 nCurr = decodeNormal(currPack.x);
+
+        float  dPrev = asfloat(prevPack.z);
+        float  dCurr = asfloat(currPack.z);
+
+        bool depthClose  = abs(dPrev - dCurr) < params.depthEps;
+        bool normalClose = dot(nPrev, nCurr)  > params.normalDotEps;
+
+        return !(depthClose && normalClose);
+    }
+
     void runGatherSuffixes(uint3 dispatchThreadId: SV_DispatchThreadID, uint groupThreadIdx: SV_GroupIndex, uint3 groupID: SV_GroupID)
     {
         int2 pixel = dispatchThreadId.xy;
@@ -153,6 +180,13 @@ struct SuffixResampling
         int prefixLength = 0;
 
         bool hasValidTemporalNeighbor = false;
+
+        if (params.enableEarlyStop && !isGBufferChanged(pixel))
+        {
+            printSetPixel(pixel);
+            print("bufferChanged", 1);
+            return;
+        }
 
         if (centralPrefixValid)
         {

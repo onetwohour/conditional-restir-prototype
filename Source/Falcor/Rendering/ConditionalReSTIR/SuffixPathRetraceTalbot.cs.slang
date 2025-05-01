@@ -52,6 +52,9 @@ struct SuffixPathRetrace
     RetraceWorkloadQueue queue;
     StructuredBuffer<uint> foundNeighborPixels;
 
+    Texture2D<PackedHitInfo> vbuffer;
+    Texture2D<PackedHitInfo> prevVbuffer;
+
     // for linear growth of M when merging reservoirs
 
     int getNeighborCount()

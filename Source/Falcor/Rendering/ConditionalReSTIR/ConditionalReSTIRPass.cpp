@@ -181,6 +181,9 @@ namespace Falcor
         mPathTracerParams.seed = seed;
         mPathTracerParams.samplesPerPixel = samplesPerPixel;
         mPathTracerParams.DIMode = DIMode;
+        mPathTracerParams.depthEps = mOptions.depthEps;
+        mPathTracerParams.normalDotEps = mOptions.normalDotEps;
+        mPathTracerParams.enableEarlyStop = mOptions.enableEarlyStop;
     }
 
     void ConditionalReSTIRPass::setOwnerDefines(Program::DefineList defines)
@@ -272,6 +275,18 @@ namespace Falcor
 
         mRecompile |= widget.checkbox("Use Prev Frame Scene Data", mOptions.usePrevFrameSceneData);
 
+        if (auto group = widget.group("Use EarlyStop", false))
+        {
+            dirty |= group.checkbox("EarlyStop", mOptions.enableEarlyStop);
+
+            dirty |= group.var("Depth Epsilon", mOptions.depthEps, 0.0001f, 0.01f, 0.0001f);
+            group.tooltip("이전 프레임과 현재 프레임의 깊이 차이가 이 값보다 작으면 동일한 픽셀로 간주합니다.");
+
+            dirty |= group.var("Normal Dot Epsilon", mOptions.normalDotEps, 0.9f, 1.0f, 0.0005f);
+            group.tooltip("이전 프레임과 현재 프레임의 노멀 벡터 내적이 이 값보다 크면 동일한 픽셀로 간주합니다.");
+
+            mpPixelDebug->renderUI(group);
+        }
 
         if (auto group = widget.group("Debugging"))
         {
@@ -316,6 +331,7 @@ namespace Falcor
             std::swap(mpPrefixReservoirs, mpPrevPrefixReservoirs);
             std::swap(mpReservoirs, mpPrevReservoirs);
             std::swap(mpPrefixGBuffer, mpPrevPrefixGBuffer);
+            pRenderContext->copyResource(mpPrevVBuffer.get(), mpVBuffer.get());
         }
 
         mpPixelDebug->endFrame(pRenderContext);
@@ -422,6 +438,8 @@ namespace Falcor
         if (!mpTemporalVBuffer || mpTemporalVBuffer->getHeight() != frameDim.y || mpTemporalVBuffer->getWidth() != frameDim.x)
         {
             mpTemporalVBuffer = Texture::create2D(frameDim.x, frameDim.y, mpScene->getHitInfo().getFormat(), 1, 1);
+            mpVBuffer = Texture::create2D(frameDim.x, frameDim.y, mpScene->getHitInfo().getFormat(), 1, 1);
+            mpPrevVBuffer = Texture::create2D(frameDim.x, frameDim.y, mpScene->getHitInfo().getFormat(), 1, 1);
         }
 
         mReallocate = false;
@@ -476,6 +494,8 @@ namespace Falcor
     )
     {
         FALCOR_PROFILE("SuffixResampling");
+
+        pRenderContext->copyResource(mpVBuffer.get(), pVBuffer.get());
 
         bool hasTemporalReuse = mOptions.subpathSetting.suffixTemporalReuse;
         // if we have no temporal history, skip the first round (set suffixTemporalReuse in CB to false temporarily)
@@ -828,6 +848,8 @@ namespace Falcor
                         var["prevReservoirs"] = pPrevSuffixReservoirs;
                         var["suffixReuseRoundId"] = -1;
                         var["integrationPrefixId"] = integrationPrefixId;
+                        var["vbuffer"] = mpVBuffer;
+                        var["prevVbuffer"] = mpPrevVBuffer;
 
                         int multiplier = mOptions.subpathSetting.useTalbotMISForGather ? mOptions.subpathSetting.finalGatherSuffixCount + 1 : 2;
 
@@ -906,6 +928,7 @@ namespace Falcor
         {
             var["vbuffer"] = pVBuffer;
             var["temporalVbuffer"] = mpTemporalVBuffer;
+            var["prevVbuffer"] = mpPrevVBuffer;
         }
         return var;
     }
@@ -938,6 +961,8 @@ namespace Falcor
         var["prevReservoirs"] = mpPrevSuffixReservoirs;
 
         var["prefixGBuffer"] = mpPrefixGBuffer;
+
+        var["prevVbuffer"] = mpPrevVBuffer;
 
         return var;
     }

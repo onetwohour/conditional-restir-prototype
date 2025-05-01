@@ -64,6 +64,11 @@ struct ReSTIRPathTracerParams
     int    useConditionalReSTIR = true;
     int3    pad;
 
+    float depthEps       = 0.0005f;   // default 0.0005
+    float normalDotEps   = 0.995f;  // default cos(5°)
+
+    bool enableEarlyStop = true;
+
 #ifndef HOST_CODE
     bool disableDirectIllumination() { return DIMode >= 1; }
     bool disableGeneralizedDirectIllumination() { return DIMode == 2; }

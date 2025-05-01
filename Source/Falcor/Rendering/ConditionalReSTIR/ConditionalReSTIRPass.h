@@ -66,6 +66,12 @@ namespace Falcor
 
             ConditionalReSTIR::RetraceScheduleType retraceScheduleType = ConditionalReSTIR::RetraceScheduleType::Compact;
 
+            // G-buffer similarity threshold for early exit
+            float depthEps = 0.0005f;    ///< Depth threshold for early stop
+            float normalDotEps = 0.995f; ///< Normal dot product threshold
+
+            bool enableEarlyStop = true;
+
             // Note: Empty constructor needed for clang due to the use of the nested struct constructor in the parent constructor.
             Options() {}
         };
@@ -261,6 +267,10 @@ namespace Falcor
         float mPrevJitterX;
         float mPrevJitterY;
         Texture::SharedPtr mpTemporalVBuffer;
+
+        Texture::SharedPtr mpVBuffer;
+        Texture::SharedPtr mpPrevVBuffer;
+        Buffer::SharedPtr mpPrevJacobian;
 
 public:
         bool mRecompile = true;                             ///< Recompile programs on next frame if set to true.

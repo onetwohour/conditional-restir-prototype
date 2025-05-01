@@ -34,6 +34,7 @@ struct PrefixResampling
 
     Texture2D<PackedHitInfo> vbuffer; 
     Texture2D<PackedHitInfo> temporalVbuffer;
+    Texture2D<PackedHitInfo> prevVbuffer;
 
 
     Texture2D<float2> motionVectors;    
