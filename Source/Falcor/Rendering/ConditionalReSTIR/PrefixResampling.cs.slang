@@ -36,6 +36,8 @@ struct PrefixResampling
     Texture2D<PackedHitInfo> temporalVbuffer;
     Texture2D<PackedHitInfo> prevVbuffer;
 
+    RWTexture2D<float3> savedWeight;
+    RWTexture2D<uint> unchangedCounterBuffer;
 
     Texture2D<float2> motionVectors;    
     RWStructuredBuffer<PathReservoir> reservoirs;
