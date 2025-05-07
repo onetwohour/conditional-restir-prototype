@@ -189,13 +189,17 @@ struct SuffixResampling
         if (bufferChanged) unchangedCounterBuffer[pixel] = 0;
         else 
         {
-            unchangedCounterBuffer[pixel] = min(unchangedCounterBuffer[pixel] + 1, 1000);
+            float threshold = 0.1f;
 
-            float unchangedFrames = float(unchangedCounterBuffer[pixel]);
-            float threshold = max(0.1f, pow(params.decayFactor, unchangedFrames));
+            if (params.useDecay)
+            {
+                unchangedCounterBuffer[pixel] = min(unchangedCounterBuffer[pixel] + 1, 1000);
+                float unchangedFrames = float(unchangedCounterBuffer[pixel]);
+                threshold = max(0.1f, pow(params.decayFactor, unchangedFrames));
+            }
+
             float randomValue = sampleNext1D(sg);
 
-            print("Unchanged Frames: ", unchangedFrames);
             print("Threshold: ", threshold);
             print("Random Value: ", randomValue);
 

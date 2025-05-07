@@ -294,6 +294,10 @@ namespace Falcor
                 "변화 없는 프레임이 계속될수록 Suffix Weight를 재사용할 확률이 증가합니다.\n이 값이 작을수록 확률은 더 빠르게 상승합니다."
             );
             mPathTracerParams.decayFactor = mOptions.suffixWeightReuseDecay;
+
+            dirty |= group.checkbox("Use Decay", mOptions.useDecay, true);
+            group.tooltip("초반 업데이트 빈도를 느리게 감소시킵니다.");
+            mPathTracerParams.useDecay = mOptions.useDecay;
         }
 
         if (auto group = widget.group("Debugging"))

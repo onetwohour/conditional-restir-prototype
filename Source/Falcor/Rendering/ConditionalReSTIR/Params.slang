@@ -69,6 +69,7 @@ struct ReSTIRPathTracerParams
 
     bool enableEarlyStop = true;
     float decayFactor = 0.99f;
+    bool useDecay = true;
 
 #ifndef HOST_CODE
     bool disableDirectIllumination() { return DIMode >= 1; }

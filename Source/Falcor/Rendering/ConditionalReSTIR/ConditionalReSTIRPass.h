@@ -72,6 +72,7 @@ namespace Falcor
 
             bool enableEarlyStop = true;
             float suffixWeightReuseDecay = 0.99f;
+            bool useDecay = true;
 
             // Note: Empty constructor needed for clang due to the use of the nested struct constructor in the parent constructor.
             Options() {}
