@@ -71,7 +71,7 @@ namespace Falcor
             float normalDotEps = 0.995f; ///< Normal dot product threshold
 
             bool enableEarlyStop = true;
-            float suffixWeightReuseDecay = 0.99f;
+            float suffixWeightReuseDecay = 0.995f;
             bool useDecay = true;
 
             // Note: Empty constructor needed for clang due to the use of the nested struct constructor in the parent constructor.

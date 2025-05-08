@@ -68,7 +68,7 @@ struct ReSTIRPathTracerParams
     float normalDotEps   = 0.995f;  // default cos(5°)
 
     bool enableEarlyStop = true;
-    float decayFactor = 0.99f;
+    float decayFactor = 0.995f;
     bool useDecay = true;
 
 #ifndef HOST_CODE

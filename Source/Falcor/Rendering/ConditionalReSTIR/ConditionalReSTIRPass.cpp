@@ -185,6 +185,7 @@ namespace Falcor
         mPathTracerParams.normalDotEps = mOptions.normalDotEps;
         mPathTracerParams.enableEarlyStop = mOptions.enableEarlyStop;
         mPathTracerParams.decayFactor = mOptions.suffixWeightReuseDecay;
+        mPathTracerParams.useDecay = mOptions.useDecay;
     }
 
     void ConditionalReSTIRPass::setOwnerDefines(Program::DefineList defines)
@@ -276,27 +277,34 @@ namespace Falcor
 
         mRecompile |= widget.checkbox("Use Prev Frame Scene Data", mOptions.usePrevFrameSceneData);
 
-        if (auto group = widget.group("Use EarlyStop", false))
+        if (auto group = widget.group("Use EarlyStop"))
         {
             dirty |= group.checkbox("EarlyStop", mOptions.enableEarlyStop);
             mPathTracerParams.enableEarlyStop = mOptions.enableEarlyStop;
 
             dirty |= group.var("Depth Epsilon", mOptions.depthEps, 0.0001f, 0.01f, 0.0001f);
-            group.tooltip("이전 프레임과 현재 프레임의 깊이 차이가 이 값보다 작으면 동일한 픽셀로 간주합니다.");
+            group.tooltip(
+                "If the depth difference between the previous frame and the current frame is smaller than this value, "
+                "the pixel is considered the same."
+            );
             mPathTracerParams.depthEps = mOptions.depthEps;
 
             dirty |= group.var("Normal Dot Epsilon", mOptions.normalDotEps, 0.9f, 1.0f, 0.0005f);
-            group.tooltip("이전 프레임과 현재 프레임의 노멀 벡터 내적이 이 값보다 크면 동일한 픽셀로 간주합니다.");
+            group.tooltip(
+                "If the dot product of the normal vectors between the previous and current frame is greater than this "
+                "value, the pixel is considered the same."
+            );
             mPathTracerParams.normalDotEps = mOptions.normalDotEps;
 
             dirty |= group.var("Suffix Weight Reuse Decay", mOptions.suffixWeightReuseDecay, 0.5f, 1.0f, 0.001f);
             group.tooltip(
-                "변화 없는 프레임이 계속될수록 Suffix Weight를 재사용할 확률이 증가합니다.\n이 값이 작을수록 확률은 더 빠르게 상승합니다."
+                "As unchanged frames continue, the probability of reusing the suffix weight increases.\n"
+                "The smaller this value is, the faster the probability increases."
             );
             mPathTracerParams.decayFactor = mOptions.suffixWeightReuseDecay;
 
-            dirty |= group.checkbox("Use Decay", mOptions.useDecay, true);
-            group.tooltip("초반 업데이트 빈도를 느리게 감소시킵니다.");
+            dirty |= group.checkbox("Use Decay", mOptions.useDecay);
+            group.tooltip("Slows down the update frequency in the initial frames.");
             mPathTracerParams.useDecay = mOptions.useDecay;
         }
 
