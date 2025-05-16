@@ -186,6 +186,7 @@ namespace Falcor
         mPathTracerParams.enableEarlyStop = mOptions.enableEarlyStop;
         mPathTracerParams.decayFactor = mOptions.suffixWeightReuseDecay;
         mPathTracerParams.useDecay = mOptions.useDecay;
+        mPathTracerParams.threshold = mOptions.threshold;
     }
 
     void ConditionalReSTIRPass::setOwnerDefines(Program::DefineList defines)
@@ -280,32 +281,30 @@ namespace Falcor
         if (auto group = widget.group("Use EarlyStop"))
         {
             dirty |= group.checkbox("EarlyStop", mOptions.enableEarlyStop);
-            mPathTracerParams.enableEarlyStop = mOptions.enableEarlyStop;
 
             dirty |= group.var("Depth Epsilon", mOptions.depthEps, 0.0001f, 0.01f, 0.0001f);
             group.tooltip(
                 "If the depth difference between the previous frame and the current frame is smaller than this value, "
                 "the pixel is considered the same."
             );
-            mPathTracerParams.depthEps = mOptions.depthEps;
 
             dirty |= group.var("Normal Dot Epsilon", mOptions.normalDotEps, 0.9f, 1.0f, 0.0005f);
             group.tooltip(
                 "If the dot product of the normal vectors between the previous and current frame is greater than this "
                 "value, the pixel is considered the same."
             );
-            mPathTracerParams.normalDotEps = mOptions.normalDotEps;
 
             dirty |= group.var("Suffix Weight Reuse Decay", mOptions.suffixWeightReuseDecay, 0.5f, 1.0f, 0.001f);
             group.tooltip(
                 "As unchanged frames continue, the probability of reusing the suffix weight increases.\n"
                 "The smaller this value is, the faster the probability increases."
             );
-            mPathTracerParams.decayFactor = mOptions.suffixWeightReuseDecay;
 
             dirty |= group.checkbox("Use Decay", mOptions.useDecay);
             group.tooltip("Slows down the update frequency in the initial frames.");
-            mPathTracerParams.useDecay = mOptions.useDecay;
+
+            dirty |= group.var("Minimum Reuse Threshold", mOptions.threshold, 0.0f, 1.0f, 0.05f);
+            group.tooltip("The threshold of minimum porbability to reuse.");
         }
 
         if (auto group = widget.group("Debugging"))

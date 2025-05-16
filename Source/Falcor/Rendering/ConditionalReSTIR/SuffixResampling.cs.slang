@@ -184,18 +184,18 @@ struct SuffixResampling
 
         bool hasValidTemporalNeighbor = false;
 
-        bool bufferChanged = !params.enableEarlyStop || isGBufferChanged(pixel);
+        bool bufferChanged = (!params.enableEarlyStop || isGBufferChanged(pixel));
 
         if (bufferChanged) unchangedCounterBuffer[pixel] = 0;
         else 
         {
-            float threshold = 0.1f;
+            float threshold = params.threshold;
 
             if (params.useDecay)
             {
                 unchangedCounterBuffer[pixel] = min(unchangedCounterBuffer[pixel] + 1, 1000);
                 float unchangedFrames = float(unchangedCounterBuffer[pixel]);
-                threshold = max(0.1f, pow(params.decayFactor, unchangedFrames));
+                threshold = max(params.threshold, pow(params.decayFactor, unchangedFrames));
             }
             else unchangedCounterBuffer[pixel] = 0;
 
