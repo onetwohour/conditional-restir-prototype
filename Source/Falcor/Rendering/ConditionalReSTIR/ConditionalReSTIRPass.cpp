@@ -184,9 +184,13 @@ namespace Falcor
         mPathTracerParams.depthEps = mOptions.depthEps;
         mPathTracerParams.normalDotEps = mOptions.normalDotEps;
         mPathTracerParams.enableEarlyStop = mOptions.enableEarlyStop;
-        mPathTracerParams.decayFactor = mOptions.suffixWeightReuseDecay;
+        mPathTracerParams.decayFactor = mOptions.decayFactor;
         mPathTracerParams.useDecay = mOptions.useDecay;
         mPathTracerParams.threshold = mOptions.threshold;
+        mPathTracerParams.decayStartFrame = mOptions.decayStartFrame;
+        mPathTracerParams.decayType = mOptions.decayType;
+        mPathTracerParams.sigmoidMidpoint = mOptions.sigmoidMidpoint;
+        mPathTracerParams.linearSlope = mOptions.linearSlope;
     }
 
     void ConditionalReSTIRPass::setOwnerDefines(Program::DefineList defines)
@@ -294,14 +298,43 @@ namespace Falcor
                 "value, the pixel is considered the same."
             );
 
-            dirty |= group.var("Suffix Weight Reuse Decay", mOptions.suffixWeightReuseDecay, 0.5f, 1.0f, 0.001f);
-            group.tooltip(
-                "As unchanged frames continue, the probability of reusing the suffix weight increases.\n"
-                "The smaller this value is, the faster the probability increases."
-            );
-
             dirty |= group.checkbox("Use Decay", mOptions.useDecay);
             group.tooltip("Slows down the update frequency in the initial frames.");
+
+            std::vector<Falcor::Gui::DropdownValue> decayTypeList = {
+                {0, "Exponential"}, {1, "Sigmoid"}, {2, "Linear"}, {3, "Piecewise"}
+            };
+            dirty |= group.dropdown("Decay Type", decayTypeList, mOptions.decayType);
+            group.tooltip(
+                "Choose decay type:\n"
+                "- Exponential: threshold * exp(-decayFactor * unchangedFrames)\n"
+                "- Sigmoid: smooth S-curve control\n"
+                "- Linear: linear decrease\n"
+                "- Piecewise: constant then rapid drop"
+            );
+
+            if (mOptions.decayType == 0) // Exponential
+            {
+                dirty |= group.var("Decay Factor", mOptions.decayFactor, 0.0001f, 0.01f, 0.001f);
+                group.tooltip("Smaller value: faster decay.");
+            }
+            else if (mOptions.decayType == 1) // Sigmoid
+            {
+                dirty |= group.var("Decay Factor", mOptions.decayFactor, 0.01f, 2.0f, 0.01f);
+                dirty |= group.var("Sigmoid Midpoint", mOptions.sigmoidMidpoint, 5.0f, 1000.0f, 1.0f);
+                group.tooltip("Sigmoid: midpoint = change center, decay factor = slope.");
+            }
+            else if (mOptions.decayType == 2) // Linear
+            {
+                dirty |= group.var("Linear Slope", mOptions.linearSlope, 0.0001f, 0.05f, 0.0001f);
+                group.tooltip("Linear decay: the speed of threshold drop.");
+            }
+            else if (mOptions.decayType == 3) // Piecewise
+            {
+                dirty |= group.var("Decay Start Frame", mOptions.decayStartFrame, 1.0f, 1000.0f, 1.0f);
+                dirty |= group.var("Decay Factor", mOptions.decayFactor, 0.01f, 2.0f, 0.01f);
+                group.tooltip("Piecewise: constant up to start frame, then rapid decay.");
+            }
 
             dirty |= group.var("Minimum Reuse Threshold", mOptions.threshold, 0.0f, 1.0f, 0.05f);
             group.tooltip("The threshold of minimum porbability to reuse.");

@@ -71,9 +71,13 @@ namespace Falcor
             float normalDotEps = 0.995f; ///< Normal dot product threshold
 
             bool enableEarlyStop = true;
-            float suffixWeightReuseDecay = 0.998f;
             bool useDecay = true;
             float threshold = 0.1f;
+            unsigned int decayType = 0;
+            float decayFactor = 0.0005f;
+            float sigmoidMidpoint = 600.f;
+            float linearSlope = .0009f;
+            float decayStartFrame = 600.f;
 
             // Note: Empty constructor needed for clang due to the use of the nested struct constructor in the parent constructor.
             Options() {}

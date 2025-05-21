@@ -195,7 +195,24 @@ struct SuffixResampling
             {
                 unchangedCounterBuffer[pixel] = min(unchangedCounterBuffer[pixel] + 1, 1000);
                 float unchangedFrames = float(unchangedCounterBuffer[pixel]);
-                threshold = max(params.threshold, pow(params.decayFactor, unchangedFrames));
+                switch (params.decayType)
+                {
+                case 0: // exponential
+                    threshold = params.threshold * exp(-params.decayFactor * unchangedFrames);
+                    break;
+                case 1: // sigmoid
+                    threshold = params.threshold + (1.0f - 1.0f / (1.0f + exp(-params.decayFactor * (unchangedFrames - params.sigmoidMidpoint)))) * (1.0f - params.threshold);
+                    break;
+                case 2: // linear
+                    threshold = max(0.0f, params.threshold - params.linearSlope * unchangedFrames);
+                    break;
+                case 3: // piecewise
+                    if (unchangedFrames < params.decayStartFrame)
+                        threshold = params.threshold;
+                    else
+                        threshold = params.threshold * exp(-params.decayFactor * (unchangedFrames - params.decayStartFrame));
+                    break;
+                }
             }
             else unchangedCounterBuffer[pixel] = 0;
 
