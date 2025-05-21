@@ -68,9 +68,13 @@ struct ReSTIRPathTracerParams
     float normalDotEps   = 0.995f;  // default cos(5°)
 
     bool enableEarlyStop = true;
-    float decayFactor = 0.998f;
     bool useDecay = true;
     float threshold = 0.1f;
+    uint decayType = 0;
+    float decayFactor = 0.005f;
+    float sigmoidMidpoint = 600.f;
+    float linearSlope = .0009f;
+    float decayStartFrame = 600.f;
 
 #ifndef HOST_CODE
     bool disableDirectIllumination() { return DIMode >= 1; }
