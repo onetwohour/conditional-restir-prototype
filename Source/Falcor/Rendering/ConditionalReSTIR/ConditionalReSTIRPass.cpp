@@ -315,25 +315,49 @@ namespace Falcor
 
             if (mOptions.decayType == 0) // Exponential
             {
-                dirty |= group.var("Decay Factor", mOptions.decayFactor, 0.0001f, 0.01f, 0.001f);
-                group.tooltip("Smaller value: faster decay.");
+                float decayFrameTarget = 1000.0f;
+                mOptions.decayFactor = -std::log(mOptions.threshold) / decayFrameTarget;
+
+                group.text("Auto decay factor: " + std::to_string(mOptions.decayFactor));
+                group.tooltip(
+                    "Exponential decay auto-adjusted to reach threshold at frame " +
+                    std::to_string((int)decayFrameTarget)
+                );
             }
             else if (mOptions.decayType == 1) // Sigmoid
             {
-                dirty |= group.var("Decay Factor", mOptions.decayFactor, 0.01f, 2.0f, 0.01f);
-                dirty |= group.var("Sigmoid Midpoint", mOptions.sigmoidMidpoint, 5.0f, 1000.0f, 1.0f);
-                group.tooltip("Sigmoid: midpoint = change center, decay factor = slope.");
+                float decayFrameTarget = 1000.0f;
+                mOptions.sigmoidMidpoint = 500.0f;
+                float deltaX = decayFrameTarget - mOptions.sigmoidMidpoint;
+                mOptions.decayFactor = -std::log(1.0f / mOptions.threshold - 1.0f) / deltaX;
+
+                group.text("Sigmoid midpoint: " + std::to_string(mOptions.sigmoidMidpoint));
+                group.text("Auto decay factor: " + std::to_string(mOptions.decayFactor));
+                group.tooltip(
+                    "Sigmoid decay auto-adjusted to reach threshold at frame " + std::to_string((int)decayFrameTarget)
+                );
             }
             else if (mOptions.decayType == 2) // Linear
             {
-                dirty |= group.var("Linear Slope", mOptions.linearSlope, 0.0001f, 0.05f, 0.0001f);
-                group.tooltip("Linear decay: the speed of threshold drop.");
+                float decayFrameTarget = 1000.0f;
+                mOptions.linearSlope = (1.0f - mOptions.threshold) / decayFrameTarget;
+
+                group.text("Auto linear slope: " + std::to_string(mOptions.linearSlope));
+                group.tooltip("Linear decay will reach threshold at frame " + std::to_string((int)decayFrameTarget));
             }
             else if (mOptions.decayType == 3) // Piecewise
             {
-                dirty |= group.var("Decay Start Frame", mOptions.decayStartFrame, 1.0f, 1000.0f, 1.0f);
-                dirty |= group.var("Decay Factor", mOptions.decayFactor, 0.01f, 2.0f, 0.01f);
-                group.tooltip("Piecewise: constant up to start frame, then rapid decay.");
+                float decayStartFrame = 600.0f;
+                float decayFrameTarget = 1000.0f;
+                mOptions.decayStartFrame = decayStartFrame;
+                mOptions.decayFactor = -std::log(mOptions.threshold) / (decayFrameTarget - decayStartFrame);
+
+                group.text("Decay start frame: " + std::to_string((int)decayStartFrame));
+                group.text("Auto decay factor: " + std::to_string(mOptions.decayFactor));
+                group.tooltip(
+                    "Piecewise decay: constant until " + std::to_string((int)decayStartFrame) +
+                    ", then exponential decay to threshold at frame " + std::to_string((int)decayFrameTarget)
+                );
             }
 
             dirty |= group.var("Minimum Reuse Threshold", mOptions.threshold, 0.0f, 1.0f, 0.05f);

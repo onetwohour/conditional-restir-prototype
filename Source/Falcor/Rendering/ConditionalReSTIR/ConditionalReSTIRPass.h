@@ -74,8 +74,8 @@ namespace Falcor
             bool useDecay = true;
             float threshold = 0.1f;
             uint32_t decayType = 0;
-            float decayFactor = 0.0005f;
-            float sigmoidMidpoint = 600.f;
+            float decayFactor = 0.002f;
+            float sigmoidMidpoint = 500.f;
             float linearSlope = .0009f;
             float decayStartFrame = 600.f;
 
