@@ -72,7 +72,8 @@ struct ReSTIRPathTracerParams
     float threshold = 0.1f;
     uint decayType = 0;
     float decayFactor = 0.002f;
-    float sigmoidMidpoint = 500.f;
+    uint smoothStart = 200;
+    uint smoothEnd = 800; 
     float linearSlope = 0.0009f;
     float decayStartFrame = 600.0f;
 

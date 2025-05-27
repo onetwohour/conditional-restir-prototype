@@ -189,7 +189,8 @@ namespace Falcor
         mPathTracerParams.threshold = mOptions.threshold;
         mPathTracerParams.decayStartFrame = mOptions.decayStartFrame;
         mPathTracerParams.decayType = mOptions.decayType;
-        mPathTracerParams.sigmoidMidpoint = mOptions.sigmoidMidpoint;
+        mPathTracerParams.smoothStart = mOptions.smoothStart;
+        mPathTracerParams.smoothEnd = mOptions.smoothEnd;
         mPathTracerParams.linearSlope = mOptions.linearSlope;
     }
 
@@ -302,13 +303,13 @@ namespace Falcor
             group.tooltip("Slows down the update frequency in the initial frames.");
 
             std::vector<Falcor::Gui::DropdownValue> decayTypeList = {
-                {0, "Exponential"}, {1, "Sigmoid"}, {2, "Linear"}, {3, "Piecewise"}
+                {0, "Exponential"}, {1, "Smoothstep"}, {2, "Linear"}, {3, "Piecewise"}
             };
             dirty |= group.dropdown("Decay Type", decayTypeList, mOptions.decayType);
             group.tooltip(
                 "Choose decay type:\n"
                 "- Exponential: threshold * exp(-decayFactor * unchangedFrames)\n"
-                "- Sigmoid: smooth S-curve control\n"
+                "- Smoothstep: smooth S-curve control\n"
                 "- Linear: linear decrease\n"
                 "- Piecewise: constant then rapid drop"
             );
@@ -324,17 +325,20 @@ namespace Falcor
                     std::to_string((int)decayFrameTarget)
                 );
             }
-            else if (mOptions.decayType == 1) // Sigmoid
+            else if (mOptions.decayType == 1) // Smoothstep
             {
-                float decayFrameTarget = 1000.0f;
-                mOptions.sigmoidMidpoint = 500.0f;
-                float deltaX = decayFrameTarget - mOptions.sigmoidMidpoint;
-                mOptions.decayFactor = -std::log(1.0f / mOptions.threshold - 1.0f) / deltaX;
+                uint32_t decayStartFrame = 200;
+                uint32_t decayEndFrame = 800;
 
-                group.text("Sigmoid midpoint: " + std::to_string(mOptions.sigmoidMidpoint));
-                group.text("Auto decay factor: " + std::to_string(mOptions.decayFactor));
+                mOptions.smoothStart = decayStartFrame;
+                mOptions.smoothEnd = decayEndFrame;
+
+                group.text(
+                    "Smoothstep decay from frame " + std::to_string((int)decayStartFrame) + " to " +
+                    std::to_string((int)decayEndFrame)
+                );
                 group.tooltip(
-                    "Sigmoid decay auto-adjusted to reach threshold at frame " + std::to_string((int)decayFrameTarget)
+                    "Smoothstep decay curve will reach threshold at frame " + std::to_string((int)decayEndFrame)
                 );
             }
             else if (mOptions.decayType == 2) // Linear
@@ -1178,3 +1182,7 @@ namespace Falcor
 #undef field
     }
 }
+
+
+
+

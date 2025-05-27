@@ -75,7 +75,8 @@ namespace Falcor
             float threshold = 0.1f;
             uint32_t decayType = 0;
             float decayFactor = 0.002f;
-            float sigmoidMidpoint = 500.f;
+            uint32_t smoothStart = 200;
+            uint32_t smoothEnd = 800; 
             float linearSlope = .0009f;
             float decayStartFrame = 600.f;
 
@@ -288,3 +289,7 @@ public:
 
     };
 }
+
+
+
+

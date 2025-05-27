@@ -202,9 +202,11 @@ struct SuffixResampling
                 {
                     decayValue = exp(-params.decayFactor * unchangedFrames);
                 }
-                else if (params.decayType == 1) // Sigmoid
+                else if (params.decayType == 1) // Smoothstep
                 {
-                    decayValue = 1.0f - 1.0f / (1.0f + exp(-params.decayFactor * (unchangedFrames - params.sigmoidMidpoint)));
+                    float t = clamp((unchangedFrames - params.smoothStart) / (params.smoothEnd - params.smoothStart), 0.0f, 1.0f);
+                    float smooth = t * t * (3.0f - 2.0f * t);
+                    decayValue = params.threshold + (1.0f - smooth) * (1.0f - params.threshold);
                 }
                 else if (params.decayType == 2) // Linear
                 {
