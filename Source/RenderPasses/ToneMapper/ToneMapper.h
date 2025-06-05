@@ -136,5 +136,8 @@ private:
     bool mRecreateToneMapPass = true;
     bool mUpdateToneMapPass = true;
 
+    bool mSaveImageRequested = false;
+    uint32_t mFrameCount = 0;
+
     ExposureMode mExposureMode = ExposureMode::AperturePriority;
 };

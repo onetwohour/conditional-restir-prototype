@@ -280,6 +280,15 @@ void ToneMapper::execute(RenderContext* pRenderContext, const RenderData& render
     }
 
     mpToneMapPass->execute(pRenderContext, pFbo);
+
+    if (mSaveImageRequested)
+    {
+        std::string filename = "ToneMapped_LDR_" + std::to_string(mFrameCount) + ".png";
+        pDst->captureToFile(0, 0, filename, Bitmap::FileFormat::PngFile);
+        logInfo("Saved ToneMapper LDR image to " + filename);
+        mSaveImageRequested = false;
+    }
+    ++mFrameCount;
 }
 
 void ToneMapper::createLuminanceFbo(const Texture::SharedPtr& pSrc)
@@ -396,6 +405,11 @@ void ToneMapper::renderUI(Gui::Widgets& widget)
         }
 
         mRecreateToneMapPass |= tonemappingGroup.checkbox("Clamp Output", mClamp);
+    }
+
+    if (widget.button("Save ToneMapped LDR"))
+    {
+        mSaveImageRequested = true;
     }
 }
 
